@@ -7,7 +7,80 @@ package database
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
+
+const createUser = `-- name: CreateUser :one
+insert into users (id, password, clearance_level, username)
+values (
+        gen_random_uuid(),
+        $1,
+        $2,
+        $3
+) returning id, created_at, updated_at, username, password, role, clearance_level
+`
+
+type CreateUserParams struct {
+	Password       string
+	ClearanceLevel string
+	Username       string
+}
+
+func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
+	row := q.db.QueryRow(ctx, createUser, arg.Password, arg.ClearanceLevel, arg.Username)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Username,
+		&i.Password,
+		&i.Role,
+		&i.ClearanceLevel,
+	)
+	return i, err
+}
+
+const getUserById = `-- name: GetUserById :one
+select id, created_at, updated_at, username, password, role, clearance_level from users
+where id = $1
+`
+
+func (q *Queries) GetUserById(ctx context.Context, id pgtype.UUID) (User, error) {
+	row := q.db.QueryRow(ctx, getUserById, id)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Username,
+		&i.Password,
+		&i.Role,
+		&i.ClearanceLevel,
+	)
+	return i, err
+}
+
+const getUserByUsername = `-- name: GetUserByUsername :one
+select id, created_at, updated_at, username, password, role, clearance_level from users
+where username = $1
+`
+
+func (q *Queries) GetUserByUsername(ctx context.Context, username string) (User, error) {
+	row := q.db.QueryRow(ctx, getUserByUsername, username)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Username,
+		&i.Password,
+		&i.Role,
+		&i.ClearanceLevel,
+	)
+	return i, err
+}
 
 const getUsers = `-- name: GetUsers :many
 select id, created_at, updated_at, username, password, role, clearance_level from users

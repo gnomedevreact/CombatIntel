@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"github.com/gnomedevreact/CombatIntel/internal/api"
 	"github.com/gnomedevreact/CombatIntel/internal/database"
 	"github.com/gnomedevreact/CombatIntel/internal/routes"
 	"github.com/jackc/pgx/v5"
@@ -12,10 +13,6 @@ import (
 	"os"
 	"time"
 )
-
-type apiConfig struct {
-	db *database.Queries
-}
 
 func main() {
 	ctx := context.Background()
@@ -30,8 +27,8 @@ func main() {
 		port = "8080"
 	}
 
-	apiCfg := apiConfig{}
 	dbUrl := os.Getenv("DATABASE_URL")
+	var queries *database.Queries
 	if dbUrl == "" {
 		log.Fatal("DATABASE_URL environment variable not set")
 	} else {
@@ -41,13 +38,16 @@ func main() {
 		}
 		defer conn.Close(ctx)
 
-		queries := database.New(conn)
-		apiCfg.db = queries
+		queries = database.New(conn)
 		log.Println("Connected to database")
 	}
 
+	apiCfg := &api.ApiConfig{
+		Db: queries,
+	}
+
 	mux := http.NewServeMux()
-	routes.RegisterRouter(mux)
+	routes.RegisterRouter(mux, apiCfg)
 
 	srv := &http.Server{
 		Addr:              ":" + port,
