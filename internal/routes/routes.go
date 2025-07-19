@@ -28,5 +28,6 @@ func RegisterRouter(mux *http.ServeMux, apiCfg *api.ApiConfig) {
 
 	//Units
 	unitsHandler := units.NewHandler(apiCfg.Db, validator)
+	mux.Handle("GET /units", middleware.AdminMiddleware(http.HandlerFunc(unitsHandler.GetAllUnits), apiCfg))
 	mux.Handle("POST /units", Chain(http.HandlerFunc(unitsHandler.CreateUnit), middleware.AuthMiddleware))
 }

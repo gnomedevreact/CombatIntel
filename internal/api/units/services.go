@@ -11,8 +11,8 @@ type unitsService struct {
 
 func (s *unitsService) createUnit(ctx context.Context, reqData createUnitRequest) (*database.Unit, error) {
 	unit, err := s.db.CreateUnit(ctx, database.CreateUnitParams{
-		Name:        reqData.name,
-		CommanderID: reqData.commanderId,
+		Name:        reqData.Name,
+		CommanderID: reqData.CommanderId,
 	})
 	if err != nil {
 		return nil, err

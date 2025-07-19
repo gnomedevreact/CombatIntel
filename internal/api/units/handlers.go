@@ -12,12 +12,14 @@ import (
 type Handler struct {
 	unitsService unitsService
 	validator    *validator.Validate
+	db           *database.Queries
 }
 
 func NewHandler(db *database.Queries, validator *validator.Validate) *Handler {
 	return &Handler{
 		unitsService: unitsService{db},
 		validator:    validator,
+		db:           db,
 	}
 }
 
@@ -43,4 +45,13 @@ func (h *Handler) CreateUnit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.RespondWithJSON(w, http.StatusCreated, unit)
+}
+
+func (h *Handler) GetAllUnits(w http.ResponseWriter, r *http.Request) {
+	units, err := h.db.GetAllUnits(r.Context())
+	if err != nil {
+		utils.RespondWithError(w, http.StatusInternalServerError, err)
+		return
+	}
+	utils.RespondWithJSON(w, http.StatusOK, units)
 }

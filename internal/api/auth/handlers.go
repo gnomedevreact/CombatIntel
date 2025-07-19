@@ -22,8 +22,8 @@ func NewHandler(apiCfg *api.ApiConfig, validator *validator.Validate) *Handler {
 
 func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
-	decoder := json.NewDecoder(r.Body)
 
+	decoder := json.NewDecoder(r.Body)
 	var authData regsiterRequest
 	err := decoder.Decode(&authData)
 	if err != nil {
