@@ -6,6 +6,7 @@ import (
 	"github.com/gnomedevreact/CombatIntel/internal/database"
 	"github.com/gnomedevreact/CombatIntel/internal/utils"
 	"github.com/go-playground/validator/v10"
+	"github.com/jinzhu/copier"
 	"net/http"
 )
 
@@ -38,20 +39,35 @@ func (h *Handler) CreateUnit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var parsedUnit Unit
 	unit, err := h.unitsService.createUnit(r.Context(), reqData)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, err)
 		return
 	}
 
-	utils.RespondWithJSON(w, http.StatusCreated, unit)
+	err = copier.Copy(&parsedUnit, unit)
+	if err != nil {
+		utils.RespondWithError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	utils.RespondWithJSON(w, http.StatusCreated, parsedUnit)
 }
 
 func (h *Handler) GetAllUnits(w http.ResponseWriter, r *http.Request) {
+	var parsedUnits []Unit
 	units, err := h.db.GetAllUnits(r.Context())
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, err)
 		return
 	}
-	utils.RespondWithJSON(w, http.StatusOK, units)
+
+	err = copier.Copy(&parsedUnits, &units)
+	if err != nil {
+		utils.RespondWithError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	utils.RespondWithJSON(w, http.StatusOK, parsedUnits)
 }
