@@ -1,6 +1,7 @@
 package missions
 
 import (
+	"encoding/csv"
 	"encoding/json"
 	"github.com/gnomedevreact/CombatIntel/internal/database"
 	"github.com/gnomedevreact/CombatIntel/internal/utils"
@@ -68,5 +69,33 @@ func (h Handler) GetAllMissions() http.Handler {
 		}
 		copier.Copy(&parsedMissions, &missions)
 		utils.RespondWithJSON(w, http.StatusOK, parsedMissions)
+	})
+}
+
+func (h Handler) UploadMissions() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		r.ParseMultipartForm(30 << 20)
+		file, _, err := r.FormFile("missions")
+		if err != nil {
+			utils.RespondWithError(w, http.StatusInternalServerError, err)
+			return
+		}
+		defer file.Close()
+
+		reader := csv.NewReader(file)
+
+		records, err := reader.ReadAll()
+		if err != nil {
+			utils.RespondWithError(w, http.StatusInternalServerError, err)
+			return
+		}
+
+		missions, err := h.missionsService.uploadMissions(r.Context(), records)
+		if err != nil {
+			utils.RespondWithError(w, http.StatusInternalServerError, err)
+			return
+		}
+
+		utils.RespondWithJSON(w, http.StatusCreated, missions)
 	})
 }

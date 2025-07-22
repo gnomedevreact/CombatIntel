@@ -36,4 +36,5 @@ func RegisterRouter(mux *http.ServeMux, apiCfg *api.ApiConfig) {
 	missionsHandler := missions.NewHandler(apiCfg.Db, validator)
 	mux.Handle("GET /missions", middleware.AdminMiddleware(missionsHandler.GetAllMissions(), apiCfg))
 	mux.Handle("POST /missions", middleware.AuthMiddleware(missionsHandler.CreateMission()))
+	mux.Handle("POST /missions/upload", middleware.AdminMiddleware(missionsHandler.UploadMissions(), apiCfg))
 }
