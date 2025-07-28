@@ -19,3 +19,10 @@ type Mission struct {
 	ClassificationLevel string             `json:"classification_level" validate:"required"`
 	UnitId              pgtype.UUID        `json:"unit_id" validate:"required"`
 }
+
+type MissionPredict struct {
+	Losses          int `json:"losses" validate:"required,numeric"`
+	EnemyLosses     int `json:"enemyLosses" validate:"required,numeric"`
+	EnemyForcesSize int `json:"enemyForcesSize" validate:"required,numeric"`
+	OwnForcesSize   int `json:"ownForcesSize" validate:"required,numeric"`
+}

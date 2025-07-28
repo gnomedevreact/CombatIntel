@@ -8,6 +8,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	_ "github.com/jackc/pgx/v5/pgtype"
 	"github.com/joho/godotenv"
+	"github.com/rs/cors"
 	"log"
 	"net/http"
 	"os"
@@ -49,9 +50,16 @@ func main() {
 	mux := http.NewServeMux()
 	routes.RegisterRouter(mux, apiCfg)
 
+	corsHandler := cors.New(cors.Options{
+		AllowedOrigins:   []string{"*"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE"},
+		AllowedHeaders:   []string{"*"},
+		AllowCredentials: true,
+	}).Handler(mux)
+
 	srv := &http.Server{
 		Addr:              ":" + port,
-		Handler:           mux,
+		Handler:           corsHandler,
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 	log.Println("Listening on http://localhost" + srv.Addr)

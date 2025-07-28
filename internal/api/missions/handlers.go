@@ -99,3 +99,28 @@ func (h Handler) UploadMissions() http.Handler {
 		utils.RespondWithJSON(w, http.StatusCreated, missions)
 	})
 }
+
+func (h *Handler) PredictMissionOutcome() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		var reqBody MissionPredict
+
+		err := json.NewDecoder(r.Body).Decode(&reqBody)
+		if err != nil {
+			utils.RespondWithError(w, http.StatusInternalServerError, err)
+			return
+		}
+
+		predictions, err := h.missionsService.predictMissionResult(r.Context(), reqBody)
+		if err != nil {
+			utils.RespondWithError(w, http.StatusInternalServerError, err)
+			return
+		}
+
+		utils.RespondWithJSON(w, http.StatusOK, struct {
+			Outcome string `json:"outcome"`
+		}{
+			Outcome: predictions,
+		})
+	})
+}

@@ -6,6 +6,8 @@ import (
 	"github.com/gnomedevreact/CombatIntel/internal/database"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jinzhu/copier"
+	"github.com/sjwhitworth/golearn/base"
+	"github.com/sjwhitworth/golearn/trees"
 	"log"
 	"strconv"
 	"time"
@@ -125,43 +127,48 @@ func (s *missionsService) uploadMissions(ctx context.Context, records [][]string
 	return &missions, nil
 }
 
-//func (s *missionsService) predictMissionResult(ctx context.Context) {
-//	missions, err := s.db.GetAllMissions(ctx)
-//
-//	lossesAttr := base.NewFloatAttribute("losses")
-//	enemyLossesAttr := base.NewFloatAttribute("enemy_losses")
-//	enemyForcesAttr := base.NewFloatAttribute("enemy_forces_size")
-//	ownForcesAttr := base.NewFloatAttribute("own_forces_size")
-//	outcomeAttr := base.NewCategoricalAttribute()
-//
-//	attrs := []base.Attribute{lossesAttr, enemyLossesAttr, enemyForcesAttr, ownForcesAttr, outcomeAttr}
-//	inst := base.NewDenseInstances()
-//
-//	for _, attr := range attrs {
-//		inst.AddAttribute(attr)
-//	}
-//	inst.AddClassAttribute(outcomeAttr)
-//
-//	lossesSpec, err := inst.GetAttribute(lossesAttr)
-//	enemyLosseSpec, err := inst.GetAttribute(enemyLossesAttr)
-//	enemyForcesSpec, err := inst.GetAttribute(enemyForcesAttr)
-//	ownForcesSpec, err := inst.GetAttribute(ownForcesAttr)
-//	outcomeSpec, err := inst.GetAttribute(outcomeAttr)
-//
-//	inst.Extend(len(missions))
-//	for i, row := range missions {
-//		inst.Set(lossesSpec, i, []byte(string(row.Losses)))
-//		inst.Set(enemyLosseSpec, i, []byte(string(row.EnemyLosses)))
-//		inst.Set(enemyForcesSpec, i, []byte(string(row.EnemyForcesSize)))
-//		inst.Set(ownForcesSpec, i, []byte(string(row.OwnForcesSize)))
-//		inst.Set(outcomeSpec, i, outcomeAttr.GetSysValFromString(row.Outcome))
-//	}
-//
-//	tree := trees.NewID3DecisionTree(0.6)
-//	tree.Fit(inst)
-//
-//	predictions, err := tree.Predict(inst)
-//	if err != nil {
-//		log.Fatal(err)
-//	}
-//}
+func (s *missionsService) predictMissionResult(ctx context.Context, reqBody MissionPredict) (string, error) {
+	missions, err := s.db.GetAllMissions(ctx)
+
+	enemyForcesAttr := base.NewFloatAttribute("enemy_forces_size")
+	ownForcesAttr := base.NewFloatAttribute("own_forces_size")
+	outcomeAttr := base.NewCategoricalAttribute()
+
+	attrs := []base.Attribute{enemyForcesAttr, ownForcesAttr, outcomeAttr}
+	inst := base.NewDenseInstances()
+
+	for _, attr := range attrs {
+		inst.AddAttribute(attr)
+	}
+	inst.AddClassAttribute(outcomeAttr)
+	enemyForcesSpec, err := inst.GetAttribute(enemyForcesAttr)
+	ownForcesSpec, err := inst.GetAttribute(ownForcesAttr)
+	outcomeSpec, err := inst.GetAttribute(outcomeAttr)
+
+	inst.Extend(len(missions))
+	for i, row := range missions {
+		inst.Set(enemyForcesSpec, i, base.PackFloatToBytes(float64(row.EnemyForcesSize)))
+		inst.Set(ownForcesSpec, i, base.PackFloatToBytes(float64(row.OwnForcesSize)))
+		inst.Set(outcomeSpec, i, outcomeAttr.GetSysValFromString(row.Outcome))
+	}
+
+	tree := trees.NewID3DecisionTree(0.6)
+	tree.Fit(inst)
+
+	predictInst := base.NewDenseInstances()
+	for _, attr := range attrs {
+		predictInst.AddAttribute(attr)
+	}
+	predictInst.AddClassAttribute(outcomeAttr)
+	predictInst.Extend(1)
+
+	predictInst.Set(enemyForcesSpec, 0, base.PackFloatToBytes(float64(reqBody.EnemyForcesSize)))
+	predictInst.Set(ownForcesSpec, 0, base.PackFloatToBytes(float64(reqBody.OwnForcesSize)))
+
+	predictions, err := tree.Predict(predictInst)
+	if err != nil {
+		return "", err
+	}
+
+	return predictions.RowString(0), nil
+}
