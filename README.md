@@ -1,3 +1,5 @@
+## Contributing
+
 # CombatIntel
 
 CombatIntel is a backend system for tactical analysis and prediction of combat missions.  
